@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up — Smart Classroom</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f4f6fb;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .auth-wrap { width: 100%; max-width: 420px; padding: 20px; }
+    .auth-logo { text-align: center; margin-bottom: 24px; }
+    .auth-logo .icon { font-size: 2.8rem; }
+    .auth-logo h1 { font-size: 1.3rem; color: #3b6ff0; font-weight: 700; margin-top: 6px; }
+    .auth-logo p { font-size: 0.85rem; color: #6b7a99; margin-top: 2px; }
+    .auth-card { background: #fff; border: 1px solid #dde3f0; border-radius: 16px; padding: 32px; box-shadow: 0 4px 24px rgba(59,111,240,0.08); }
+    .auth-card h2 { font-size: 1.25rem; color: #1a2540; margin-bottom: 24px; }
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 0.88rem; font-weight: 700; color: #1a2540; margin-bottom: 6px; }
+    input { width: 100%; padding: 11px 14px; border: 1px solid #dde3f0; border-radius: 8px; font-size: 0.95rem; color: #1a2540; transition: border-color 0.15s; background: #fff; }
+    input:focus { outline: none; border-color: #3b6ff0; }
+    button { width: 100%; padding: 12px; background: #3b6ff0; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: background 0.15s; margin-top: 4px; }
+    button:hover { background: #2550c0; }
+    .auth-link { text-align: center; margin-top: 18px; font-size: 0.88rem; color: #6b7a99; }
+    .auth-link a { color: #3b6ff0; text-decoration: none; font-weight: 600; }
+    .flash-messages { margin-bottom: 18px; }
+    .flash { padding: 10px 12px; border-radius: 8px; margin-bottom: 8px; font-size: 0.88rem; }
+    .flash.success { background: #edfaf3; border: 1px solid #a7f0c4; color: #16a34a; }
+    .flash.error { background: #fff0f0; border: 1px solid #fcc3c3; color: #dc2626; }
+
+    @media (max-width: 480px) {
+      body { align-items: flex-start; padding: 18px 0; }
+      .auth-wrap { padding: 14px; }
+      .auth-card { padding: 22px 18px; border-radius: 14px; }
+      .auth-logo { margin-bottom: 16px; }
+      .auth-logo .icon { font-size: 2.2rem; }
+      .auth-logo h1 { font-size: 1.12rem; }
+      .auth-card h2 { font-size: 1.08rem; margin-bottom: 18px; }
+      input, button { font-size: 0.95rem; }
+    }
+
+  </style>
+</head>
+<body>
+  <div class="auth-wrap">
+    <div class="auth-logo">
+      <div class="icon">🏫</div>
+      <h1>Smart Classroom</h1>
+      <p>Create your student account</p>
+    </div>
+    <div class="auth-card">
+      <h2>Create Account</h2>
+      <div class="flash-messages">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+      </div>
+      <form method="POST">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" name="name" placeholder="Your full name" required>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" name="email" placeholder="you@example.com" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" name="password" placeholder="••••••••" required>
+        </div>
+        <div class="form-group">
+          <label>Confirm Password</label>
+          <input type="password" name="confirm_password" placeholder="••••••••" required>
+        </div>
+        <button type="submit">Create Account</button>
+      </form>
+      <div class="auth-link">
+        Already have an account? <a href="{{ url_for('login') }}">Login</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

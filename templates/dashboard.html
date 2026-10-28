@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard — Smart Classroom{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div>
+    <h1>📊 Dashboard</h1>
+    <p>Monitoring and prediction only. Controls and history have their own pages.</p>
+  </div>
+  <div class="badge-row">
+    <span class="badge badge-info">📈 Records: <strong id="totalRows">{{ total_rows|default(0) }}</strong></span>
+    <span class="badge badge-info">🕒 <span id="lastUpdateTime">--</span></span>
+    <span id="espBadge" class="badge badge-danger">🔴 ESP32 Offline</span>
+  </div>
+</section>
+
+<div id="offlineNotice" class="notice notice-warning" style="display:none;">
+  ⚠️ ESP32 is not connected right now. The dashboard is showing the last saved dataset values only.
+</div>
+
+<!-- Sensor Readings -->
+<div class="card">
+  <h3>🌡️ Live Sensor Readings</h3>
+  <div class="sensor-grid">
+    <div class="sensor-card">
+      <div class="sensor-label">🌡️ Temperature</div>
+      <div class="sensor-value" id="temp">--</div>
+      <div class="sensor-unit">°C</div>
+    </div>
+    <div class="sensor-card">
+      <div class="sensor-label">💧 Humidity</div>
+      <div class="sensor-value" id="humidity">--</div>
+      <div class="sensor-unit">%</div>
+    </div>
+    <div class="sensor-card">
+      <div class="sensor-label">📊 Pressure</div>
+      <div class="sensor-value" id="pressure">--</div>
+      <div class="sensor-unit">hPa</div>
+    </div>
+    <div class="sensor-card">
+      <div class="sensor-label">👤 PIR Motion</div>
+      <div class="sensor-value" id="pir">--</div>
+      <div class="sensor-unit">0=No · 1=Yes</div>
+    </div>
+    <div class="sensor-card">
+      <div class="sensor-label">💡 LDR Light</div>
+      <div class="sensor-value" id="ldr">--</div>
+      <div class="sensor-unit">0–1023</div>
+    </div>
+    <div class="sensor-card">
+      <div class="sensor-label">👥 Occupancy</div>
+      <div class="sensor-value" id="occupancy">--</div>
+      <div class="sensor-unit">%</div>
+    </div>
+  </div>
+</div>
+
+<!-- Predictions -->
+<div class="card">
+  <h3>🤖 Prediction Summary</h3>
+  <div class="temp-stats-row">
+    <div class="temp-stat-card temp-stat-current">
+      <div class="temp-stat-label">Current</div>
+      <div class="temp-stat-value" id="statCurrent">--</div>
+      <div class="temp-stat-unit">°C</div>
+    </div>
+    <div class="temp-stat-card temp-stat-pred">
+      <div class="temp-stat-label">Predicted (+10 min)</div>
+      <div class="temp-stat-value" id="statPred">--</div>
+      <div class="temp-stat-unit">°C</div>
+    </div>
+    <div class="temp-stat-card temp-stat-min">
+      <div class="temp-stat-label">Min (last 20)</div>
+      <div class="temp-stat-value" id="statMin">--</div>
+      <div class="temp-stat-unit">°C</div>
+    </div>
+    <div class="temp-stat-card temp-stat-max">
+      <div class="temp-stat-label">Max (last 20)</div>
+      <div class="temp-stat-value" id="statMax">--</div>
+      <div class="temp-stat-unit">°C</div>
+    </div>
+    <div class="temp-stat-card temp-stat-avg">
+      <div class="temp-stat-label">Avg (last 20)</div>
+      <div class="temp-stat-value" id="statAvg">--</div>
+      <div class="temp-stat-unit">°C</div>
+    </div>
+  </div>
+</div>
+
+<!-- Control Status (read-only) -->
+<div class="card">
+  <h3>🎮 Current Control State <small style="font-weight:400;font-size:0.8rem;color:var(--muted)">— change it from <a href="{{ url_for('controls_page') }}">Controls</a></small></h3>
+  <div class="status-pills" id="statusPills">
+    <div class="status-pill"><span class="pill-label">Mode</span><span class="pill-val" id="systemMode">--</span></div>
+    <div class="status-pill"><span class="pill-label">💡 Light</span><span class="pill-val" id="lightState">--</span></div>
+    <div class="status-pill"><span class="pill-label">Light Mode</span><span class="pill-val" id="lightMode">--</span></div>
+    <div class="status-pill"><span class="pill-label">🌀 Ventilation</span><span class="pill-val" id="ventState">--</span></div>
+    <div class="status-pill"><span class="pill-label">Vent Mode</span><span class="pill-val" id="ventMode">--</span></div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>🌡️ Temperature Trend</h3>
+  <p class="card-desc">Last 20 saved readings. Full logs are only on the History page.</p>
+  <div style="position:relative;height:280px;margin-top:18px;">
+    <canvas id="tempChart"></canvas>
+  </div>
+</div>
+
+<div class="refresh-timer" id="refreshTimer">⏱ 30s</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+let countdown = 30;
+
+const tempChart = new Chart(document.getElementById('tempChart').getContext('2d'), {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [
+      { label:'Actual Temp', data:[], borderWidth:2.5, pointRadius:3.5, tension:0.35, fill:true },
+      { label:'Predicted (+10min)', data:[], borderDash:[6,4], borderWidth:2, pointRadius:3, tension:0.35, fill:false }
+    ]
+  },
+  options: {
+    responsive:true,
+    maintainAspectRatio:false,
+    plugins:{ legend:{position:'top'}, tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y?.toFixed(2)??'--'} °C`}}},
+    scales:{ x:{ticks:{maxTicksLimit:10,maxRotation:30}}, y:{ticks:{callback:v=>Number(v).toFixed(1)}} }
+  }
+});
+
+function fmtNum(v, digits=1) {
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n.toFixed(digits) : '--';
+}
+
+function updateChart(history) {
+  const chron = [...(history || [])].reverse();
+  const labels  = chron.map(r=>(r.server_timestamp||'').slice(11,19));
+  const actuals = chron.map(r=>Number.isFinite(parseFloat(r.temperature)) ? parseFloat(r.temperature) : null);
+  const preds   = chron.map(r=>Number.isFinite(parseFloat(r.predicted_temp)) ? parseFloat(r.predicted_temp) : null);
+  tempChart.data.labels = labels;
+  tempChart.data.datasets[0].data = actuals;
+  tempChart.data.datasets[1].data = preds;
+  tempChart.update('none');
+
+  const vals = actuals.filter(v=>v !== null);
+  const pvals = preds.filter(v=>v !== null);
+  document.getElementById('statCurrent').textContent = vals.length ? vals[vals.length-1].toFixed(2) : '--';
+  document.getElementById('statPred').textContent    = pvals.length ? pvals[pvals.length-1].toFixed(2) : '--';
+  document.getElementById('statMin').textContent     = vals.length ? Math.min(...vals).toFixed(2) : '--';
+  document.getElementById('statMax').textContent     = vals.length ? Math.max(...vals).toFixed(2) : '--';
+  document.getElementById('statAvg').textContent     = vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2) : '--';
+}
+
+function setStatePill(id, val) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = val || '--';
+  el.className = 'pill-val';
+  if (val === 'ON') el.classList.add('pill-on');
+  if (val === 'OFF') el.classList.add('pill-off');
+  if (val === 'auto') el.classList.add('pill-auto');
+  if (val === 'manual') el.classList.add('pill-manual');
+}
+
+function setEspStatus(esp) {
+  const badge = document.getElementById('espBadge');
+  const notice = document.getElementById('offlineNotice');
+  if (esp && esp.online) {
+    badge.textContent = '✅ ESP32 Live';
+    badge.className = 'badge badge-success';
+    notice.style.display = 'none';
+  } else {
+    badge.textContent = '🔴 ESP32 Offline';
+    badge.className = 'badge badge-danger';
+    notice.style.display = 'block';
+  }
+}
+
+function fetchData() {
+  fetch('/api/latest_data')
+    .then(r=>r.json())
+    .then(data=>{
+      document.getElementById('totalRows').textContent = data.total_rows || 0;
+      document.getElementById('lastUpdateTime').textContent = (data.last_update || '--').slice(0,19).replace('T',' ');
+      setEspStatus(data.esp32);
+
+      const d = data.latest || {};
+      document.getElementById('temp').textContent = fmtNum(d.temperature, 1);
+      document.getElementById('humidity').textContent = fmtNum(d.humidity, 1);
+      document.getElementById('pressure').textContent = fmtNum(d.pressure, 1);
+      document.getElementById('pir').textContent = d.pir ?? '--';
+      document.getElementById('ldr').textContent = d.ldr ?? '--';
+      const occ = parseFloat(d.taux_occupation);
+      document.getElementById('occupancy').textContent = Number.isFinite(occ) ? (occ <= 1 ? occ*100 : occ).toFixed(0)+'%' : '--';
+
+      const c = data.controls || {};
+      setStatePill('systemMode', c.mode);
+      setStatePill('lightState', c.light_state);
+      setStatePill('lightMode', c.light_mode);
+      setStatePill('ventState', c.ventilation_state);
+      setStatePill('ventMode', c.ventilation_mode);
+
+      updateChart(data.history || []);
+    })
+    .catch(()=>{
+      setEspStatus({online:false});
+    });
+}
+
+function tick() {
+  document.getElementById('refreshTimer').textContent = `⏱ ${countdown}s`;
+  if (--countdown < 0) { countdown = 30; fetchData(); }
+}
+
+fetchData();
+setInterval(tick, 1000);
+</script>
+{% endblock %}

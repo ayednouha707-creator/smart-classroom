@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% block title %}Controls — Smart Classroom{% endblock %}
+
+{% block content %}
+{% set system_auto = controls['mode'] == 'auto' %}
+{% set light_manual_disabled = (not can_control) or system_auto or controls['light_mode'] == 'auto' %}
+{% set ventilation_manual_disabled = (not can_control) or system_auto or controls['ventilation_mode'] == 'auto' %}
+<section class="page-header">
+  <div>
+    <h1>🎮 Controls</h1>
+    <p>Manage ventilation, lighting and auto-mode thresholds.</p>
+  </div>
+  <div class="badge-row">
+    <span class="badge {{ 'badge-warn' if controls['mode']=='manual' else 'badge-success' }}">
+      {{ '⚙️ Manual' if controls['mode']=='manual' else '🤖 Auto' }} Mode
+    </span>
+    {% if not can_control %}
+    <span class="badge badge-info">👁️ Read-only</span>
+    {% endif %}
+  </div>
+</section>
+
+{% if not can_control %}
+<div class="notice notice-warning">
+  ⚠️ You are in <strong>read-only mode</strong>. Only admins can change controls.
+</div>
+{% endif %}
+{% if system_auto %}
+<div class="notice notice-info">
+  🤖 <strong>Auto mode is active.</strong> Manual ON/OFF buttons are disabled. The system decides lighting and ventilation using thresholds.
+</div>
+{% endif %}
+
+<div class="control-grid">
+
+  <!-- Global Mode -->
+  <section class="card">
+    <h3>🌐 System Mode</h3>
+    <p class="card-desc">Switch the whole system between automatic and manual control.</p>
+    <form method="post" class="stack-form auto-submit-form">
+      <input type="hidden" name="form_name" value="global_mode">
+      <label>System Mode</label>
+      <div class="toggle-row">
+        <label class="toggle-label">
+          <input type="radio" name="mode" value="auto"
+            {{ 'checked' if controls['mode']=='auto' }}
+            {{ 'disabled' if not can_control }} onchange="this.form.submit()">
+          <span class="toggle-btn">🤖 Auto</span>
+        </label>
+        <label class="toggle-label">
+          <input type="radio" name="mode" value="manual"
+            {{ 'checked' if controls['mode']=='manual' }}
+            {{ 'disabled' if not can_control }} onchange="this.form.submit()">
+          <span class="toggle-btn">⚙️ Manual</span>
+        </label>
+      </div>
+      <button class="btn btn-primary" {{ 'disabled' if not can_control }}>Apply Mode</button>
+    </form>
+  </section>
+
+  <!-- Lighting -->
+  <section class="card">
+    <h3>💡 Lighting</h3>
+    <p class="card-desc">Control classroom lighting. Auto uses LDR threshold.</p>
+    <form method="post" class="stack-form auto-submit-form">
+      <input type="hidden" name="form_name" value="lighting">
+      <label>Mode</label>
+      <div class="toggle-row">
+        <label class="toggle-label">
+          <input type="radio" name="light_mode" value="auto"
+            {{ 'checked' if controls['light_mode']=='auto' }}
+            {{ 'disabled' if (not can_control) or system_auto }} onchange="this.form.submit()">
+          <span class="toggle-btn">🤖 Auto</span>
+        </label>
+        <label class="toggle-label">
+          <input type="radio" name="light_mode" value="manual"
+            {{ 'checked' if controls['light_mode']=='manual' }}
+            {{ 'disabled' if (not can_control) or system_auto }} onchange="this.form.submit()">
+          <span class="toggle-btn">⚙️ Manual</span>
+        </label>
+      </div>
+      <label>State (Manual only)</label>
+      {% if system_auto or controls['light_mode']=='auto' %}
+      <p class="field-hint">Manual light ON/OFF is locked because auto mode is active.</p>
+      {% endif %}
+      <div class="toggle-row">
+        <label class="toggle-label">
+          <input type="radio" name="light_state" value="ON"
+            {{ 'checked' if controls['light_state']=='ON' }}
+            {{ 'disabled' if light_manual_disabled }} onchange="this.form.submit()">
+          <span class="toggle-btn toggle-on">ON</span>
+        </label>
+        <label class="toggle-label">
+          <input type="radio" name="light_state" value="OFF"
+            {{ 'checked' if controls['light_state']=='OFF' }}
+            {{ 'disabled' if light_manual_disabled }} onchange="this.form.submit()">
+          <span class="toggle-btn toggle-off">OFF</span>
+        </label>
+      </div>
+      <div class="current-state-row">
+        Current: <span class="state-badge {{ 'state-on' if controls['light_state']=='ON' else 'state-off' }}">
+          {{ controls['light_state'] }}
+        </span>
+      </div>
+      <button class="btn btn-primary" {{ 'disabled' if (not can_control) or system_auto }}>Save Lighting</button>
+    </form>
+  </section>
+
+  <!-- Ventilation -->
+  <section class="card">
+    <h3>🌀 Ventilation</h3>
+    <p class="card-desc">Control classroom ventilation. Auto uses temperature threshold.</p>
+    <form method="post" class="stack-form auto-submit-form">
+      <input type="hidden" name="form_name" value="ventilation">
+      <label>Mode</label>
+      <div class="toggle-row">
+        <label class="toggle-label">
+          <input type="radio" name="ventilation_mode" value="auto"
+            {{ 'checked' if controls['ventilation_mode']=='auto' }}
+            {{ 'disabled' if (not can_control) or system_auto }} onchange="this.form.submit()">
+          <span class="toggle-btn">🤖 Auto</span>
+        </label>
+        <label class="toggle-label">
+          <input type="radio" name="ventilation_mode" value="manual"
+            {{ 'checked' if controls['ventilation_mode']=='manual' }}
+            {{ 'disabled' if (not can_control) or system_auto }} onchange="this.form.submit()">
+          <span class="toggle-btn">⚙️ Manual</span>
+        </label>
+      </div>
+      <label>State (Manual only)</label>
+      {% if system_auto or controls['ventilation_mode']=='auto' %}
+      <p class="field-hint">Manual ventilation ON/OFF is locked because auto mode is active.</p>
+      {% endif %}
+      <div class="toggle-row">
+        <label class="toggle-label">
+          <input type="radio" name="ventilation_state" value="ON"
+            {{ 'checked' if controls['ventilation_state']=='ON' }}
+            {{ 'disabled' if ventilation_manual_disabled }} onchange="this.form.submit()">
+          <span class="toggle-btn toggle-on">ON</span>
+        </label>
+        <label class="toggle-label">
+          <input type="radio" name="ventilation_state" value="OFF"
+            {{ 'checked' if controls['ventilation_state']=='OFF' }}
+            {{ 'disabled' if ventilation_manual_disabled }} onchange="this.form.submit()">
+          <span class="toggle-btn toggle-off">OFF</span>
+        </label>
+      </div>
+      <div class="current-state-row">
+        Current: <span class="state-badge {{ 'state-on' if controls['ventilation_state']=='ON' else 'state-off' }}">
+          {{ controls['ventilation_state'] }}
+        </span>
+      </div>
+      <button class="btn btn-primary" {{ 'disabled' if (not can_control) or system_auto }}>Save Ventilation</button>
+    </form>
+  </section>
+
+  <!-- Auto Thresholds -->
+  <section class="card">
+    <h3>📐 Auto-Mode Thresholds</h3>
+    <p class="card-desc">Sensor thresholds used when mode is <strong>Auto</strong>.</p>
+    <form method="post" class="stack-form auto-submit-form">
+      <input type="hidden" name="form_name" value="thresholds">
+      <label>🌡️ Temperature threshold (°C)</label>
+      <p class="field-hint">Ventilation turns <strong>ON</strong> when temp exceeds this value.</p>
+      <input type="number" name="temp_threshold" step="0.5" min="0" max="60"
+        value="{{ controls['temp_threshold'] }}"
+        {{ 'disabled' if not can_control }}>
+      <label>💡 LDR light threshold (0–1023)</label>
+      <p class="field-hint">Light turns <strong>ON</strong> when LDR reading is below this value (darker room).</p>
+      <input type="number" name="ldr_threshold" step="10" min="0" max="1023"
+        value="{{ controls['ldr_threshold'] }}"
+        {{ 'disabled' if not can_control }}>
+      <button class="btn btn-primary" {{ 'disabled' if not can_control }}>Save Thresholds</button>
+    </form>
+  </section>
+
+</div>
+
+<!-- Live Status -->
+<div class="card">
+  <h3>📋 Current State (persisted in DB)</h3>
+  <div class="status-row">
+    <div class="status-item">
+      <span class="status-label">System Mode</span>
+      <span class="state-badge {{ 'state-auto' if controls['mode']=='auto' else 'state-manual' }}">{{ controls['mode']|upper }}</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Light State</span>
+      <span class="state-badge {{ 'state-on' if controls['light_state']=='ON' else 'state-off' }}">{{ controls['light_state'] }}</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Light Mode</span>
+      <span class="state-badge {{ 'state-auto' if controls['light_mode']=='auto' else 'state-manual' }}">{{ controls['light_mode']|upper }}</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Ventilation State</span>
+      <span class="state-badge {{ 'state-on' if controls['ventilation_state']=='ON' else 'state-off' }}">{{ controls['ventilation_state'] }}</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Ventilation Mode</span>
+      <span class="state-badge {{ 'state-auto' if controls['ventilation_mode']=='auto' else 'state-manual' }}">{{ controls['ventilation_mode']|upper }}</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Temp Threshold</span>
+      <span class="state-badge state-neutral">{{ controls['temp_threshold'] }}°C</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">LDR Threshold</span>
+      <span class="state-badge state-neutral">{{ controls['ldr_threshold'] }}</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Updated by</span>
+      <span style="font-size:0.85rem;color:var(--muted)">{{ controls['updated_by'] }}</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Updated at</span>
+      <span style="font-size:0.85rem;color:var(--muted)">{{ controls['updated_at'] }}</span>
+    </div>
+  </div>
+</div>
+{% endblock %}

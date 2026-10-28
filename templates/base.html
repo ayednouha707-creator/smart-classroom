@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Smart Classroom{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+
+{% if session.get('user_id') %}
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <span class="brand-icon">🏫</span>
+    <div class="brand-name">Smart Classroom</div>
+    <div class="brand-sub">IoT Monitoring System</div>
+  </div>
+
+  <div class="sidebar-user">
+    <div class="user-avatar">{{ session.get('name','U')[0].upper() }}</div>
+    <div>
+      <div class="user-name">{{ session.get('name','User') }}</div>
+      <div class="user-role">{{ session.get('role','user') }}</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' else '' }}">
+      <span class="nav-icon">📊</span> Dashboard
+    </a>
+    <a href="{{ url_for('controls_page') }}" class="{{ 'active' if request.endpoint == 'controls_page' else '' }}">
+      <span class="nav-icon">🎮</span> Controls
+    </a>
+    <a href="{{ url_for('history_page') }}" class="{{ 'active' if request.endpoint == 'history_page' else '' }}">
+      <span class="nav-icon">📅</span> History
+    </a>
+    {% if session.get('role') == 'admin' %}
+    <a href="{{ url_for('users_page') }}" class="{{ 'active' if request.endpoint == 'users_page' else '' }}">
+      <span class="nav-icon">👤</span> Users
+    </a>
+    <a href="{{ url_for('admin_page') }}" class="{{ 'active' if request.endpoint == 'admin_page' else '' }}">
+      <span class="nav-icon">⚙️</span> Admin
+    </a>
+    {% endif %}
+    <div class="nav-divider"></div>
+    <a href="{{ url_for('logout') }}" class="logout-link">
+      <span class="nav-icon">🚪</span> Logout
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">v2.0 — ESP32 IoT</div>
+</aside>
+{% endif %}
+
+<main class="page-shell">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-stack">
+      {% for category, message in messages %}
+        <div class="flash {{ category }}">
+          <span class="flash-icon">{{ '✅' if category == 'success' else '❌' if category == 'error' else 'ℹ️' }}</span>
+          {{ message }}
+        </div>
+      {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</main>
+
+</body>
+</html>

@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card">
+  <h1>Lighting Page</h1>
+  {% if not can_control %}
+    <div class="note">This account is read-only. Only the admin can change lighting settings.</div>
+  {% endif %}
+  {% if can_control %}
+  <form method="post">
+    <label>Light mode</label>
+    <select name="light_mode">
+      <option value="manual">manual</option>
+      <option value="auto">auto</option>
+    </select>
+    <label>Light state</label>
+    <select name="light_state">
+      <option value="ON">ON</option>
+      <option value="OFF">OFF</option>
+    </select>
+    <button type="submit">Save</button>
+  </form>
+  {% endif %}
+  <p>Current: {{ controls['light_state'] }} ({{ controls['light_mode'] }})</p>
+</div>
+{% endblock %}

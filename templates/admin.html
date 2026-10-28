@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block title %}Admin Panel — Smart Classroom{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div>
+    <h1>⚙️ Admin Panel</h1>
+    <p>System overview, quick user management and activity log.</p>
+  </div>
+  <div class="badge-row">
+    <span class="badge badge-success">🔐 Admin Access</span>
+  </div>
+</section>
+
+<div class="control-grid">
+  <!-- Quick create user -->
+  <div class="card">
+    <h3>➕ Quick Create User</h3>
+    <form method="post" action="{{ url_for('users_create') }}" class="stack-form">
+      <label>Full Name</label>
+      <input type="text" name="name" placeholder="Full name" required>
+      <label>Email</label>
+      <input type="email" name="email" placeholder="email@example.com" required>
+      <label>Password</label>
+      <input type="password" name="password" placeholder="Password" required minlength="6">
+      <label>Role</label>
+      <select name="role">
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+      </select>
+      <button class="btn btn-primary">Create User</button>
+    </form>
+    <div style="margin-top:12px;">
+      <a href="{{ url_for('users_page') }}" class="btn btn-outline" style="width:100%;text-align:center;">
+        👤 Full User Management →
+      </a>
+    </div>
+  </div>
+
+  <!-- User list summary -->
+  <div class="card">
+    <h3>👥 Users ({{ users|length }})</h3>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Verified</th></tr></thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td>{{ u['name'] }}</td>
+            <td style="font-size:0.82rem;color:var(--muted)">{{ u['email'] }}</td>
+            <td><span class="state-badge {{ 'state-admin' if u['role']=='admin' else 'state-user' }}">{{ u['role'] }}</span></td>
+            <td>{{ '✅' if u['verified'] else '❌' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Activity Log -->
+<div class="card">
+  <h3>📜 Recent Activity (last 50)</h3>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Time</th><th>Event</th></tr></thead>
+      <tbody>
+        {% for item in activity %}
+        <tr>
+          <td class="ts-cell muted">{{ item['timestamp'][:19].replace('T',' ') }}</td>
+          <td>{{ item['message'] }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="2" class="empty-cell">No activity yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "latest_data": {
+      ".read": true,
+      ".write": true
+    },
+    "sensor_history": {
+      ".read": true,
+      ".write": true
+    },
+    "control_state": {
+      ".read": true,
+      ".write": true
+    },
+    "esp32_status": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}

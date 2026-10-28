@@ -1,0 +1,9 @@
+.env
+firebase_key.json
+*.db
+__pycache__/
+*.pyc
+.pio/
+.vscode/
+.DS_Store
+*.log

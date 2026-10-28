@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% block title %}History — Smart Classroom{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div>
+    <h1>📅 History</h1>
+    <p>Full sensor data log — {{ total_rows }} total records</p>
+  </div>
+  <div class="badge-row">
+    <span class="badge badge-info">Showing: <strong>{{ rows|length }}</strong> rows</span>
+  </div>
+</section>
+
+<div class="card">
+  <h3>🔍 Filter Records</h3>
+  <form method="get" class="filter-form">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label>From Date</label>
+        <input type="date" name="date_from" value="{{ date_from }}">
+      </div>
+      <div class="filter-group">
+        <label>To Date</label>
+        <input type="date" name="date_to" value="{{ date_to }}">
+      </div>
+      <div class="filter-group filter-group-wide">
+        <label>Search timestamp / alert</label>
+        <input type="text" name="search" value="{{ search }}" placeholder="e.g. 2026-03-29 or dark">
+      </div>
+      <div class="filter-actions">
+        <button type="submit" class="btn btn-primary">Apply</button>
+        <a href="{{ url_for('history_page') }}" class="btn btn-outline">Clear</a>
+      </div>
+    </div>
+  </form>
+</div>
+
+
+<div class="card full-width-card">
+  <h3>🌡️ Temperature Trend</h3>
+  <p class="card-desc">Chart based on the same records shown below, so the date/search filters control both the chart and the table.</p>
+  <div style="position:relative;height:300px;margin-top:18px;">
+    <canvas id="historyTempChart"></canvas>
+  </div>
+</div>
+
+<div class="card full-width-card">
+  <h3>📋 Sensor History</h3>
+  <div class="table-wrap">
+    <table class="data-table history-table">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Temp (°C)</th>
+          <th>Pred (°C)</th>
+          <th>Humidity (%)</th>
+          <th>Pressure (hPa)</th>
+          <th>PIR</th>
+          <th>LDR</th>
+          <th>RFID</th>
+          <th>Occupancy</th>
+          <th>Light</th>
+          <th>Vent</th>
+          <th>Source</th>
+          <th>Alert</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        {% set light_state = row.get('final_light_state') %}
+        {% set vent_state = row.get('final_ventilation_state') %}
+        <tr>
+          <td class="ts-cell">{{ (row.get('server_timestamp') or '--')[:19].replace('T',' ') }}</td>
+          <td>{% if row.get('temperature') is not none and row.get('temperature') != '' %}{{ '%.1f'|format(row.get('temperature')|float) }}{% else %}--{% endif %}</td>
+          <td class="muted">{% if row.get('predicted_temp') is not none and row.get('predicted_temp') != '' %}{{ '%.1f'|format(row.get('predicted_temp')|float) }}{% else %}--{% endif %}</td>
+          <td>{% if row.get('humidity') is not none and row.get('humidity') != '' %}{{ '%.1f'|format(row.get('humidity')|float) }}{% else %}--{% endif %}</td>
+          <td>{% if row.get('pressure') is not none and row.get('pressure') != '' %}{{ '%.1f'|format(row.get('pressure')|float) }}{% else %}--{% endif %}</td>
+          <td>{{ row.get('pir') if row.get('pir') is not none else '--' }}</td>
+          <td>{{ row.get('ldr') if row.get('ldr') is not none else '--' }}</td>
+          <td class="muted">{{ row.get('rfid_uid') or '-' }}</td>
+          <td>{% if row.get('taux_occupation') is not none and row.get('taux_occupation') != '' %}{{ '%.0f'|format((row.get('taux_occupation')|float) * 100 if (row.get('taux_occupation')|float) <= 1 else (row.get('taux_occupation')|float)) }}%{% else %}--{% endif %}</td>
+          <td>
+            {% if light_state %}
+            <span class="state-badge {{ 'state-on' if light_state=='ON' else 'state-off' }}">{{ light_state }}</span>
+            {% else %}<span class="muted">--</span>{% endif %}
+          </td>
+          <td>
+            {% if vent_state %}
+            <span class="state-badge {{ 'state-on' if vent_state=='ON' else 'state-off' }}">{{ vent_state }}</span>
+            {% else %}<span class="muted">--</span>{% endif %}
+          </td>
+          <td class="muted">{{ row.get('source') or 'dataset' }}</td>
+          <td class="muted">{{ row.get('alert_message') or '-' }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="13" class="empty-cell">
+            {% if date_from or date_to or search %}
+              No records match your filter. <a href="{{ url_for('history_page') }}">Clear filter</a>
+            {% else %}
+              No records yet.
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const historyRows = {{ rows|tojson }};
+function safeNumber(value) { const n = parseFloat(value); return Number.isFinite(n) ? n : null; }
+const chronologicalRows = [...historyRows].reverse();
+const labels = chronologicalRows.map(row => {
+  const ts = (row.server_timestamp || '').replace('T', ' ');
+  return ts.length >= 19 ? ts.slice(11, 19) : ts;
+});
+const actualTemps = chronologicalRows.map(row => safeNumber(row.temperature));
+const predictedTemps = chronologicalRows.map(row => safeNumber(row.predicted_temp));
+const chartElement = document.getElementById('historyTempChart');
+if (chartElement) {
+  new Chart(chartElement.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Actual Temp', data: actualTemps, borderWidth: 2.5, pointRadius: 3, tension: 0.35, fill: true },
+        { label: 'Predicted (+10min)', data: predictedTemps, borderDash: [6, 4], borderWidth: 2, pointRadius: 3, tension: 0.35, fill: false }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'top' } },
+      scales: {
+        x: { ticks: { maxTicksLimit: 10, maxRotation: 30 } },
+        y: { ticks: { callback: value => Number(value).toFixed(1) } }
+      }
+    }
+  });
+}
+</script>
+{% endblock %}

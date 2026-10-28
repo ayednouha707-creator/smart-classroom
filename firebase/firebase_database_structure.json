@@ -1,0 +1,96 @@
+{
+  "users": {
+    "uid": {
+      "name": "User Name",
+      "email": "user@email.com",
+      "role": "admin/user",
+      "created_at": "timestamp",
+      "updated_at": "timestamp",
+      "last_login": "timestamp"
+    }
+  },
+  "email_verifications": {
+    "safe_email_key": {
+      "email": "user@email.com",
+      "name": "User Name",
+      "code": "123456",
+      "expires_at": "timestamp",
+      "created_at": "timestamp",
+      "status": "pending/verified/expired",
+      "local_user_id": 1
+    }
+  },
+  "latest_data": {
+    "temperature": 26.4,
+    "humidity": 54,
+    "pressure": 1012,
+    "light_level": 820,
+    "ldr": 820,
+    "motion": true,
+    "pir": 1,
+    "rfid": "CARD_ID",
+    "occupation_count": 5,
+    "occupation_rate": 25,
+    "timestamp": "timestamp"
+  },
+  "sensor_history": {
+    "record_id": {
+      "temperature": 26.4,
+      "humidity": 54,
+      "pressure": 1012,
+      "light_level": 820,
+      "pir": 1,
+      "rfid": "CARD_ID",
+      "occupation_count": 5,
+      "occupation_rate": 25,
+      "timestamp": "timestamp",
+      "source": "esp32/flask/firebase"
+    }
+  },
+  "control_state": {
+    "mode": "manual",
+    "fan": "OFF",
+    "light_state": "OFF",
+    "ventilation": "OFF",
+    "ventilation_state": "OFF",
+    "updated_by": "uid/system",
+    "updated_at": "timestamp"
+  },
+  "control_history": {
+    "record_id": {
+      "action": "mode_changed/fan_changed/light_changed",
+      "old_value": "OFF",
+      "new_value": "ON",
+      "user": "uid/system",
+      "timestamp": "timestamp"
+    }
+  },
+  "activity_log": {
+    "log_id": {
+      "event_type": "sensor_received/control_changed/user_created/user_updated/user_deleted/login/logout/alert/prediction",
+      "description": "Clear readable description",
+      "user": "uid/system",
+      "timestamp": "timestamp"
+    }
+  },
+  "alerts": {
+    "alert_id": {
+      "type": "high_temperature/low_light/no_motion/system",
+      "message": "Alert message",
+      "status": "active/resolved",
+      "timestamp": "timestamp"
+    }
+  },
+  "predictions": {
+    "prediction_id": {
+      "predicted_temperature": 27.8,
+      "model": "temperature_prediction_model",
+      "timestamp": "timestamp"
+    }
+  },
+  "esp32_status": {
+    "connected": true,
+    "last_seen": "timestamp",
+    "source": "esp32"
+  }
+}

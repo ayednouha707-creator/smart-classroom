@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card">
+  <h1>Auto Mode</h1>
+  <p>This page uses live ESP32 data and model prediction to control light and ventilation automatically.</p>
+  {% if not can_control %}
+    <div class="note">This account is read-only. Only the admin can enable or change auto mode.</div>
+  {% else %}
+    <form method="post"><button type="submit">Enable Auto Mode</button></form>
+  {% endif %}
+  <p>Current system mode: <b>{{ controls['mode'] }}</b></p>
+  {% if latest %}
+  <p>Latest temperature: {{ latest['temperature'] }}°C</p>
+  <p>Predicted temperature: {{ latest['predicted_temp'] if latest['predicted_temp'] is not none else 'No prediction' }}</p>
+  <p>Auto light: {{ latest['light_decision'] }}</p>
+  <p>Auto ventilation: {{ latest['ventilation_decision'] }}</p>
+  {% else %}
+  <p>No live data yet.</p>
+  {% endif %}
+</div>
+{% endblock %}
